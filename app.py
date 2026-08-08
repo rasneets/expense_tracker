@@ -40,6 +40,11 @@ st.title("My Expense Assistant")
 
 # --- 1. File upload ---
 uploaded_file = st.file_uploader("Upload your monthly expense file", type=["xlsx"])
+st.caption(
+    "Note: expects an .xlsx file with column headers in the first row "
+    "(Date + expense categories), one row per day below that, and a "
+    "totals row as the very last row."
+)
 
 if uploaded_file is not None:
 
@@ -115,3 +120,18 @@ Question: {question}"""
 
 else:
     st.info("Upload an expense file to get started.")
+
+# --- Footer ---
+st.markdown(
+    """
+    <div style="text-align: center; margin-top: 40px;">
+        <span style="font-size: 12px; color: gray;">
+            Developed by Rasneet Singh
+            <a href="https://in.linkedin.com/in/rasneet-singh-53476924a" target="_blank" style="text-decoration: none;">
+                <img src="https://cdn.simpleicons.org/linkedin/0A66C2" width="14" style="vertical-align: middle; margin-left: 4px;">
+            </a>
+        </span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
