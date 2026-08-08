@@ -20,7 +20,23 @@ def get_llm(provider):
         raise ValueError("Unknown provider")
 
 
-st.title("💰 My Expense Assistant")
+def extract_text(response):
+    """Different providers return .content differently — this normalizes it to plain text."""
+    content = response.content
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+            elif isinstance(block, str):
+                parts.append(block)
+        return "".join(parts)
+    return str(content)
+
+
+st.title("My Expense Assistant")
 
 # --- 1. File upload ---
 uploaded_file = st.file_uploader("Upload your monthly expense file", type=["xlsx"])
@@ -87,7 +103,7 @@ Question: {question}"""
                 try:
                     llm = get_llm(provider)
                     response = llm.invoke(prompt)
-                    answer = response.content
+                    answer = extract_text(response)
                 except Exception as e:
                     if "rate_limit" in str(e).lower() or "429" in str(e):
                         answer = "⚠️ Free API limit reached for now. Please wait a bit and try again."
