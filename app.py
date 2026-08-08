@@ -20,7 +20,7 @@ def get_llm(provider):
         raise ValueError("Unknown provider")
 
 
-st.title("My Expense Assistant")
+st.title("💰 My Expense Assistant")
 
 # --- 1. File upload ---
 uploaded_file = st.file_uploader("Upload your monthly expense file", type=["xlsx"])
@@ -77,7 +77,8 @@ if uploaded_file is not None:
 Here is the full data in CSV format:
 {data_as_text}
 
-Answer the question below using only this data. If you need to sum or compare numbers, work through it carefully and double-check your arithmetic before giving the final number.
+Work out the answer carefully and double-check any arithmetic internally, but DO NOT show your reasoning or list out the data you looked at.
+Reply with ONLY the final answer, in one short, direct sentence. Do not restate the question.
 
 Question: {question}"""
 
