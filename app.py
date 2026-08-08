@@ -15,7 +15,7 @@ def get_llm(provider):
     if provider == "Groq (Llama 3.3)":
         return ChatGroq(model="llama-3.3-70b-versatile", temperature=0, groq_api_key=groq_api_key)
     elif provider == "Gemini":
-        return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=gemini_api_key, temperature=0)
+        return ChatGoogleGenerativeAI(model="gemini-3.6-flash", google_api_key=gemini_api_key, temperature=0)
     else:
         raise ValueError("Unknown provider")
 
