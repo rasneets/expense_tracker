@@ -3,11 +3,22 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain_experimental.agents import create_pandas_dataframe_agent
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
 groq_api_key = st.secrets.get("GROQ_API_KEY", os.getenv("GROQ_API_KEY"))
+gemini_api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
+
+
+def get_llm(provider):
+    if provider == "Groq (Llama 3.3)":
+        return ChatGroq(model="llama-3.3-70b-versatile", temperature=0, groq_api_key=groq_api_key)
+    elif provider == "Gemini":
+        return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=gemini_api_key, temperature=0)
+    else:
+        raise ValueError("Unknown provider")
+
 
 st.title("My Expense Assistant")
 
@@ -26,7 +37,7 @@ if uploaded_file is not None:
     st.subheader("Your data")
     st.dataframe(df)
 
-    # --- 3. Automatic insights (plain pandas, no AI) ---
+    # --- 3. Automatic insights (plain pandas, no AI, no API calls at all) ---
     st.subheader("Quick insights")
 
     totals = df[category_cols].sum()
@@ -40,43 +51,50 @@ if uploaded_file is not None:
     col2.metric("Top category", f"{top_category}", f"₹{top_amount:,.0f}")
     col3.metric("Avg per day", f"₹{avg_daily:,.0f}")
 
-    # --- 4. Chat interface with history ---
+    # --- 4. Model selector ---
+    provider = st.selectbox("Choose AI model", ["Groq (Llama 3.3)", "Gemini"])
+
+    # --- 5. Chat interface with history (one API call per question) ---
     st.subheader("Ask a question")
 
-    # Create the chat history notebook, only once per session
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Redraw every past message on the page
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
 
-    # Chat input box (sits at the bottom, like ChatGPT)
     question = st.chat_input("e.g. How much did I spend on Cab?")
 
     if question:
-        # Save and show the user's question
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.write(question)
 
-        # Get and show the AI's answer
-        llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0, groq_api_key=groq_api_key)
-        agent = create_pandas_dataframe_agent(
-            llm,
-            df,
-            verbose=True,
-            allow_dangerous_code=True,
-            number_of_head_rows=len(df)
-        )
+        data_as_text = df.to_csv(index=False)
+        prompt = f"""You are an assistant answering questions about the user's personal expense data.
+
+Here is the full data in CSV format:
+{data_as_text}
+
+Answer the question below using only this data. If you need to sum or compare numbers, work through it carefully and double-check your arithmetic before giving the final number.
+
+Question: {question}"""
+
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                response = agent.invoke(question)
-            st.write(response["output"])
+                try:
+                    llm = get_llm(provider)
+                    response = llm.invoke(prompt)
+                    answer = response.content
+                except Exception as e:
+                    if "rate_limit" in str(e).lower() or "429" in str(e):
+                        answer = "⚠️ Free API limit reached for now. Please wait a bit and try again."
+                    else:
+                        answer = f"Something went wrong: {e}"
+                st.write(answer)
 
-        # Save the AI's answer too
-        st.session_state.messages.append({"role": "assistant", "content": response["output"]})
+        st.session_state.messages.append({"role": "assistant", "content": answer})
 
 else:
     st.info("Upload an expense file to get started.")
