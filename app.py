@@ -36,7 +36,7 @@ def extract_text(response):
     return str(content)
 
 
-st.title("💰 My Expense Assistant")
+st.title("My Expense Assistant")
 
 # --- 1. File upload ---
 uploaded_file = st.file_uploader("Upload your monthly expense file", type=["xlsx"])
